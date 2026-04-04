@@ -1,6 +1,6 @@
 # MCP Server Creation Skill
 
-A structured AI skill for building production-ready [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers -- from reading an API spec to publishing on PyPI, in one session.
+A structured AI skill for building production-ready [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers -- from reading service documentation to publishing on PyPI, in one session.
 
 ## What This Is
 
@@ -11,7 +11,7 @@ Think of it as a runbook that an AI assistant follows to turn your API documenta
 ## The Problem It Solves
 
 Building an MCP server involves many steps that are easy to get wrong:
-- Reading API docs and deciding on architecture
+- Reading service documentation (API specs, SDK docs, protocol guides, or any reference material) and deciding on architecture
 - Choosing the right auth module and connector from the template
 - Handling Pydantic `FieldInfo` gotchas in tool parameter defaults
 - Knowing whether an API expects empty strings or omitted fields
@@ -26,7 +26,7 @@ The skill follows 7 phases:
 
 ```
 Phase 0: Understand the Template   ->  Know what's available
-Phase 1: Read & Understand Ref     ->  Read API docs / service docs
+Phase 1: Read & Understand Ref     ->  Read service documentation
 Phase 2: Design                    ->  Architecture decisions
 Phase 3: Plan                      ->  Implementation tasks
 Phase 4: Implement                 ->  Code, tests, docs
@@ -37,7 +37,7 @@ Phase 6: Publish                   ->  PyPI + GitHub release
 ## Prerequisites
 
 - [Asgard MCP Server Template](https://github.com/asgard-ai-platform/mcp-template) -- the template this skill is designed to work with
-- API documentation or service reference material for the target service
+- Service reference material in `reference/` folder (API specs, SDK docs, protocol guides, platform manuals, or any documentation describing how to interact with the target service)
 - Test credentials for the target service (if applicable)
 
 ## Usage
@@ -46,7 +46,7 @@ Phase 6: Publish                   ->  PyPI + GitHub release
 
 Place `mcp-create.md` where your AI assistant can access it (e.g., in a skills directory or reference it directly), then:
 
-> "Use the mcp-create skill to build an MCP server from this template. The API docs are in the reference/ folder."
+> "Use the mcp-create skill to build an MCP server from this template. The service docs are in the reference/ folder."
 
 The AI will follow the 7-phase workflow: read the docs, design the architecture, plan tasks, implement, verify, and publish.
 
