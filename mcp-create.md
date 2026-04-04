@@ -14,7 +14,7 @@ A structured workflow for building production-ready MCP (Model Context Protocol)
 
 Every MCP server project starts with two things:
 
-1. **The template** -- An Asgard MCP server template project (already cloned/set up as the working directory). Contains pluggable auth modules, connectors, sample tools, project scaffolding, PyPI publish workflow, and commented-out shield badges.
+1. **The template** -- An [Asgard MCP server template](https://github.com/asgard-ai-platform/mcp-template) project (already cloned/set up as the working directory). Contains pluggable auth modules, connectors, sample tools, project scaffolding, PyPI publish workflow, and commented-out shield badges.
 
 2. **The reference material** -- Located in the project's `reference/` folder (gitignored -- not committed to the repo). This is NOT limited to REST API docs. It can be:
    - REST API specification (PDF, OpenAPI, Swagger)
