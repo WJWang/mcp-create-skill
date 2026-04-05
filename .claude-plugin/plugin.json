@@ -1,0 +1,10 @@
+{
+  "name": "mcp-create",
+  "version": "1.0.0",
+  "description": "Guided workflow for building production-ready MCP servers from the Asgard MCP Template",
+  "author": { "name": "neo" },
+  "homepage": "https://github.com/WJWang/mcp-create-skill",
+  "repository": "https://github.com/WJWang/mcp-create-skill",
+  "license": "MIT",
+  "keywords": ["mcp", "template", "server", "workflow", "python"]
+}

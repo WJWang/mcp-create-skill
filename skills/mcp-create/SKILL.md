@@ -1,3 +1,8 @@
+---
+name: mcp-create
+description: Use when building a new MCP server from the Asgard MCP Template. Guides the complete workflow from reading service documentation through design, implementation, testing, and PyPI publishing.
+---
+
 # MCP Server Creation Skill
 
 A structured workflow for building production-ready MCP (Model Context Protocol) servers from a template project to a published PyPI package. Based on real-world experience building the Asgard MCP server ecosystem.

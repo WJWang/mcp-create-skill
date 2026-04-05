@@ -1,111 +1,69 @@
-# MCP Server Creation Skill
+# mcp-create
 
-A structured AI skill for building production-ready [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers -- from reading service documentation to publishing on PyPI, in one session.
+A Claude Code plugin that guides you through building production-ready [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers -- from reading service documentation to publishing on PyPI, in one session.
 
-## What This Is
+## Installation
 
-This is a **skill file** (prompt/workflow guide) designed to be used by AI coding assistants (Claude Code, etc.) when building MCP servers from the [Asgard MCP Server Template](https://github.com/asgard-ai-platform/mcp-template). It encodes the complete process, common pitfalls, and hard-won lessons from building real MCP servers.
-
-Think of it as a runbook that an AI assistant follows to turn your API documentation into a working, published MCP server.
-
-## The Problem It Solves
-
-Building an MCP server involves many steps that are easy to get wrong:
-- Reading service documentation (API specs, SDK docs, protocol guides, or any reference material) and deciding on architecture
-- Choosing the right auth module and connector from the template
-- Handling Pydantic `FieldInfo` gotchas in tool parameter defaults
-- Knowing whether an API expects empty strings or omitted fields
-- Setting up PyPI publishing with trusted publishers
-- Writing proper README with install methods for Claude Desktop, Claude Code, Cursor, etc.
-
-This skill captures all of these lessons so the AI doesn't have to rediscover them each time.
-
-## How It Works
-
-The skill follows 7 phases:
+### 1. Add the Asgard marketplace
 
 ```
-Phase 0: Understand the Template   ->  Know what's available
-Phase 1: Read & Understand Ref     ->  Read service documentation
-Phase 2: Design                    ->  Architecture decisions
-Phase 3: Plan                      ->  Implementation tasks
-Phase 4: Implement                 ->  Code, tests, docs
-Phase 5: Verify & Fix              ->  Tests passing, cleanup
-Phase 6: Publish                   ->  PyPI + GitHub release
+/plugin marketplace add WJWang/wjwang-marketplace
 ```
 
-## Prerequisites
+### 2. Install the plugin
 
-- [Asgard MCP Server Template](https://github.com/asgard-ai-platform/mcp-template) -- the template this skill is designed to work with
-- Service reference material in `reference/` folder (API specs, SDK docs, protocol guides, platform manuals, or any documentation describing how to interact with the target service)
-- Test credentials for the target service (if applicable)
+```
+/plugin install mcp-create@wjwang-marketplace
+```
 
 ## Usage
 
-### With Claude Code
+1. Clone the [Asgard MCP Server Template](https://github.com/asgard-ai-platform/mcp-template) as your working directory
+2. Place your service documentation in the `reference/` folder (API specs, SDK docs, protocol guides, etc.)
+3. In Claude Code:
 
-Place `mcp-create.md` where your AI assistant can access it (e.g., in a skills directory or reference it directly), then:
+```
+Use the mcp-create skill to build an MCP server from this template.
+The service docs are in the reference/ folder.
+```
 
-> "Use the mcp-create skill to build an MCP server from this template. The service docs are in the reference/ folder."
+The skill walks through 7 phases:
 
-The AI will follow the 7-phase workflow: read the docs, design the architecture, plan tasks, implement, verify, and publish.
+| Phase | What happens |
+|-------|-------------|
+| 0. Understand the Template | Learn what the template provides |
+| 1. Read & Understand Reference | Study your service documentation |
+| 2. Design | Architecture decisions with your approval |
+| 3. Plan | Break implementation into tasks |
+| 4. Implement | Code, tests, documentation |
+| 5. Verify & Fix | All tests passing, cleanup |
+| 6. Publish | PyPI package + GitHub release |
 
-### What It Produces
+## Prerequisites
+
+- [Asgard MCP Server Template](https://github.com/asgard-ai-platform/mcp-template)
+- Service reference material (API specs, SDK docs, protocol guides, platform manuals, etc.)
+- Test credentials for the target service (if applicable)
+
+## What It Produces
 
 A complete MCP server project with:
-- Working tools that connect to the target service's API
-- AES encryption, OAuth, or whatever auth the service requires
+- Working tools connected to the target service
+- Appropriate auth and connector modules
 - Unit tests and E2E tests passing against real API
-- README in English and Traditional Chinese with usage examples
+- README in English and Traditional Chinese
 - PyPI package published via GitHub Actions
-- Shield badges, GitHub topics, and repo metadata configured
-
-## Template Compatibility
-
-This skill is designed for the [Asgard MCP Server Template](https://github.com/asgard-ai-platform/mcp-template), which provides:
-
-| Component | What the template provides |
-|-----------|---------------------------|
-| **Auth modules** | Bearer token, API key, OAuth 2.0, No auth |
-| **Connectors** | REST, RSS, Scraper, MQTT, GraphQL |
-| **Tools** | Sample tools with `_val()` helper for FieldInfo handling |
-| **Publishing** | GitHub Actions workflow for PyPI |
-| **Config** | `pyproject.toml` with PyPI metadata placeholders |
-| **Docs** | README templates with commented-out shield badges |
-
-The skill guides you through choosing which modules to keep, which to delete, and when to create custom ones.
 
 ## Real-World Example
 
-This skill was developed and validated by building [mcp-ezpay-einvoice](https://github.com/asgard-ai-platform/mcp-ezpay-einvoice) -- a 7-tool MCP server for Taiwan's ezPay e-invoice API, published to [PyPI](https://pypi.org/project/mcp-ezpay-einvoice/). The entire project was completed in a single session using this workflow.
-
-## Key Lessons Encoded
-
-Pitfalls discovered during real builds that this skill prevents:
-
-| Pitfall | What happens | Skill's guidance |
-|---------|-------------|-----------------|
-| `MCPServer` import | `ModuleNotFoundError` -- class doesn't exist | Use `FastMCP` from `mcp.server.fastmcp` |
-| Pydantic `FieldInfo` | Optional params serialize as `FieldInfo(...)` instead of `None` | Copy `_val()` helper from template's `sample_tools.py` |
-| Empty vs omitted fields | API rejects request with cryptic field format errors | Test with real API; template documents 3 patterns |
-| Legacy build backend | `python -m build` fails, can't publish to PyPI | Template uses `setuptools.build_meta` |
-| Template leftovers | `{service}` placeholders, wrong imports in CONTRIBUTING.md | Phase 5 includes grep audit commands |
-| Test account setup | API returns "no contract" even with credentials | Skill reminds to verify account configuration |
-
-## File Structure
-
-```
-mcp-create-skill/
-├── README.md          # This file
-└── mcp-create.md      # The skill (7-phase workflow)
-```
-
-## License
-
-MIT
+This skill was validated by building [mcp-ezpay-einvoice](https://github.com/asgard-ai-platform/mcp-ezpay-einvoice) -- a 7-tool MCP server for Taiwan's ezPay e-invoice API, published to [PyPI](https://pypi.org/project/mcp-ezpay-einvoice/).
 
 ## Part of the Asgard Ecosystem
 
 - [MCP Server Template](https://github.com/asgard-ai-platform/mcp-template) -- the template this skill works with
 - [mcp-ezpay-einvoice](https://github.com/asgard-ai-platform/mcp-ezpay-einvoice) -- example project built with this skill
 - [Asgard AI Platform](https://github.com/asgard-ai-platform) -- full ecosystem
+
+## License
+
+MIT
