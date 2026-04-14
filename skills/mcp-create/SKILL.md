@@ -19,7 +19,7 @@ A structured workflow for building production-ready MCP (Model Context Protocol)
 
 Every MCP server project starts with two things:
 
-1. **The template** -- An [Asgard MCP server template](https://github.com/asgard-ai-platform/mcp-template) project (already cloned/set up as the working directory). Contains pluggable auth modules, connectors, sample tools, project scaffolding, PyPI publish workflow, and commented-out shield badges.
+1. **The template** -- An [Asgard MCP server template](https://github.com/asgard-ai-platform/mcp-template) project (already cloned/set up as the working directory). Contains pluggable auth modules, connectors, sample tools, project scaffolding, PyPI publish workflow, and an interactive init script.
 
 2. **The reference material** -- Located in the project's `reference/` folder (gitignored -- not committed to the repo). This is NOT limited to REST API docs. It can be:
    - REST API specification (PDF, OpenAPI, Swagger)
@@ -67,32 +67,35 @@ Template Structure:
 │   ├── oauth2.py             #   OAuth 2.0 client credentials
 │   └── none.py               #   No auth (public APIs)
 ├── connectors/               # Data source connectors (PICK ONE or create custom)
-│   ├── rest_client.py        #   HTTP REST with retry, pagination
+│   ├── rest_client.py        #   HTTP REST with retry, 3 pagination modes
 │   ├── rss_client.py         #   RSS/Atom feed parser
 │   ├── scraper_client.py     #   Web scraper with BeautifulSoup
 │   ├── mqtt_client.py        #   MQTT for IoT/industrial
-│   └── graphql_client.py     #   GraphQL with cursor pagination
-├── tools/sample_tools.py     # Example tools + _val() helper (ALWAYS delete & replace)
-├── pyproject.toml            # Package metadata with PyPI fields (ALWAYS modify)
+│   └── graphql_client.py     #   GraphQL with Relay cursor pagination
+├── tools/sample_tools.py     # Example tools (ALWAYS delete & replace)
+├── pyproject.toml            # Package metadata, hatchling build (ALWAYS modify)
 ├── .env.example              # Env var template (ALWAYS rewrite)
 ├── .mcp.json                 # Claude Code config (ALWAYS rewrite)
-├── .github/workflows/publish.yml  # PyPI publish workflow (update package name)
+├── .github/workflows/publish.yml  # PyPI publish workflow (ALWAYS update)
 ├── CONTRIBUTING.md           # Contribution guide (update service name + connector import)
+├── scripts/init.py           # Interactive initializer (replaces {service} placeholders)
 ├── scripts/auth/test_connection.py  # Connection test (ALWAYS rewrite)
 ├── tests/test_all_tools.py   # E2E tests (ALWAYS rewrite)
 └── reference/                # Service docs (gitignored, NOT committed)
 ```
 
 3. **Know what the template already provides for publishing:**
-   - `pyproject.toml` has `keywords`, `classifiers`, `[project.urls]` placeholders -- just fill them in
-   - `.github/workflows/publish.yml` is ready -- just update the package name on the PyPI URL line
-   - `README.md` has commented-out shield badges -- uncomment and replace `{service}` after publishing
-   - `README.md` includes install methods (PyPI, uvx, source) and client configs (Claude Desktop, Claude Code, Cursor)
+   - `pyproject.toml` uses `hatchling` build backend with basic metadata -- add `keywords`, `classifiers`, `[project.urls]` for your service
+   - `.github/workflows/publish.yml` is ready with trusted publisher setup (OIDC `id-token: write`)
+   - `README.md` and `README.zh-TW.md` are template READMEs -- you'll rewrite them for your service, adding shield badges, install methods (PyPI, uvx, source), and client configs (Claude Desktop, Claude Code, Cursor)
 
-4. **Know the `_val()` helper pattern:**
-   - `tools/sample_tools.py` includes the `_val()` helper function and documentation
-   - Copy this helper to your tools file -- it handles Pydantic FieldInfo defaults in direct test calls
-   - See "Common Pitfalls" in Phase 4 for details
+4. **Know the init script:**
+   - `scripts/init.py` interactively replaces `{service}` placeholders across `app.py`, `.mcp.json`, `pyproject.toml`, and READMEs
+   - Run it first OR do the replacements manually -- either way, all `{service}` placeholders must be replaced
+
+5. **Know the Pydantic FieldInfo pitfall:**
+   - When MCP tool functions use `Field(default=None)` and are called directly (not via MCP protocol), defaults remain as `FieldInfo` objects, not `None`
+   - You'll need to add a `_val()` helper to handle this -- see "Common Pitfalls" in Phase 4
 
 ### Deliverable
 
@@ -225,7 +228,10 @@ Is it a standard REST API with JSON body?
 
 **Tool granularity:** Generally 1 tool per user-facing operation. Group related API calls into one tool if they always happen together (e.g., "get token then fetch data" = 1 tool).
 
-**Optional field handling:** Some APIs expect ALL fields present (empty string for unused ones). Others want unused fields omitted. Check sample code in the reference docs. The template's `sample_tools.py` documents three patterns (A/B/C) for this.
+**Optional field handling:** Some APIs expect ALL fields present (empty string for unused ones). Others want unused fields omitted. Check sample code in the reference docs. Three common patterns:
+   - **Pattern A:** `"Field": _val(param)` -- sends `""` if None (API wants all fields)
+   - **Pattern B:** Only add to dict if not None (API rejects empty strings)
+   - **Pattern C:** Conditionally include based on mode/flag
 
 ---
 
@@ -238,7 +244,7 @@ Is it a standard REST API with JSON body?
 A typical MCP server has these tasks:
 
 ```
-Task 1:  Clean up template (delete unused files)
+Task 1:  Clean up template (delete unused files, run scripts/init.py or manually replace {service})
 Task 2:  Update project config (pyproject.toml, app.py, mcp_server.py, .env.example, .mcp.json)
 Task 3:  Implement auth module (if custom auth needed)
 Task 4:  Implement config/settings.py (endpoints/config, env vars)
@@ -265,7 +271,7 @@ Task 3 ──→ Task 5 ──→ Task 6 ──→ Task 7 + Task 8 (parallel)
 ### Task 9: Documentation Details
 
 Update ALL of these (not just READMEs):
-- `README.md` -- Uncomment badges, fill in service details, add usage examples
+- `README.md` -- Rewrite for your service: add badges, features, install methods, usage examples
 - `README.zh-TW.md` -- Same in Traditional Chinese
 - `CLAUDE.md` -- Update architecture diagram, patterns, conventions
 - `CONTRIBUTING.md` -- Replace `{service}`, update connector import example
@@ -315,7 +321,7 @@ Save to `docs/superpowers/plans/YYYY-MM-DD-<name>.md` with:
    ```
    If you see `MCPServer` anywhere, it's wrong. The `mcp` package only exports `FastMCP`.
 
-2. **Pydantic FieldInfo in direct calls** -- When MCP tool functions use `Field(default=None)` and are called directly (not via MCP protocol), defaults remain as `FieldInfo` objects, not `None`. The template provides `_val()` in `sample_tools.py` -- **copy it to your tools file**:
+2. **Pydantic FieldInfo in direct calls** -- When MCP tool functions use `Field(default=None)` and are called directly (not via MCP protocol), defaults remain as `FieldInfo` objects, not `None`. **Add this helper to your tools file**:
    ```python
    from pydantic.fields import FieldInfo
    
@@ -327,12 +333,12 @@ Save to `docs/superpowers/plans/YYYY-MM-DD-<name>.md` with:
    ```
    Use it everywhere you build parameter dicts: `"Field": _val(param)`.
 
-3. **Empty string vs omitted fields** -- Some APIs require ALL fields present as empty strings. Others reject empty strings. Test with the actual service to determine behavior. The template's `sample_tools.py` documents three patterns:
+3. **Empty string vs omitted fields** -- Some APIs require ALL fields present as empty strings. Others reject empty strings. Test with the actual service to determine behavior. Three common patterns:
    - **Pattern A:** `"Field": _val(param)` -- sends `""` if None (API wants all fields)
    - **Pattern B:** Only add to dict if not None (API rejects empty strings)
    - **Pattern C:** Conditionally include based on mode/flag
 
-4. **pyproject.toml build backend** -- Template already has the correct one (`setuptools.build_meta`). Don't change it to the legacy backend.
+4. **pyproject.toml build backend** -- Template uses `hatchling` (`hatchling.build`). Don't change it to setuptools or another backend. The wheel config uses `[tool.hatch.build.targets.wheel]` with `packages` and `force-include` directives.
 
 5. **Python bytecode cache** -- After editing files, clear `__pycache__` if tests show stale behavior:
    ```bash
@@ -418,20 +424,19 @@ The template already provides most of the publishing infrastructure. You mostly 
 
 ### Step 1: Update pyproject.toml
 
-The template already has the structure. Fill in:
+The template has basic structure. Update existing fields and add missing ones:
 - `name` -- your package name (e.g., `mcp-ezpay-einvoice`)
 - `description` -- one-line description
-- `keywords` -- relevant keywords
-- `dependencies` -- add service-specific deps (e.g., `pycryptodome`)
-- `[project.urls]` -- update GitHub URLs
-- `[project.scripts]` -- update entry point name
+- `dependencies` -- add service-specific deps (e.g., `pycryptodome`); uncomment connector deps if needed
+- `[project.scripts]` -- update entry point name (e.g., `mcp-ecpay = "mcp_server:main"`)
+- Add `keywords = [...]` for PyPI discoverability
+- Add `classifiers = [...]` (Development Status, License, Python version)
+- Add `[project.urls]` section with Homepage, Repository, Issues URLs
+- Update `[tool.hatch.build.targets.wheel]` packages list if you added new top-level packages
 
-### Step 2: Update publish.yml
+### Step 2: Verify publish.yml
 
-The template already has `.github/workflows/publish.yml`. Just update the PyPI URL on the `url:` line:
-```yaml
-url: https://pypi.org/p/mcp-your-service
-```
+The template already has `.github/workflows/publish.yml` configured for trusted publisher (OIDC). No changes needed unless you want to customize the Python version or build steps.
 
 ### Step 3: Set Up PyPI Trusted Publisher
 
@@ -455,9 +460,9 @@ gh repo edit org/mcp-your-service \
   --homepage "https://..."
 ```
 
-### Step 6: Uncomment Shield Badges
+### Step 6: Add Shield Badges to README
 
-The template README has commented-out badges. Uncomment them and replace `{service}`:
+Add shield badges at the top of your README (replace `org` and `mcp-your-service`):
 
 ```markdown
 [![PyPI version](https://img.shields.io/pypi/v/mcp-your-service)](https://pypi.org/project/mcp-your-service/)
@@ -481,17 +486,17 @@ gh run watch  # watch the publish workflow
 
 ## README Template
 
-The template README already includes most sections. Customize these:
+The template README provides basic structure (features, project structure, connectors, auth, quick start). You'll rewrite it for your service with these sections:
 
 ```
-1. Title + shield badges (uncomment and fill in)
+1. Title + shield badges (add after first PyPI publish)
 2. Language toggle (English / 繁體中文)
 3. Overview (1 paragraph about YOUR service)
 4. Features (YOUR tool list + technical highlights)
 5. Prerequisites (YOUR service's credential requirements)
-6. Installation (PyPI, uvx, source -- update {service} placeholders)
+6. Installation (PyPI, uvx, source methods)
 7. Configuration (YOUR env vars table)
-8. Usage (update {service} in Claude Desktop/Code/Cursor configs)
+8. Usage (Claude Desktop JSON, Claude Code .mcp.json, Cursor config)
 9. Usage Examples (conversational format with real results)
 10. Tools Reference (table with YOUR tools)
 11. Error Codes Reference (from YOUR service's docs)
@@ -548,7 +553,7 @@ Include 6-8 examples covering main workflows. Use real responses from your test 
 - [ ] Auth module works (if applicable)
 - [ ] Config has all endpoints/settings and env vars
 - [ ] Connector handles the service protocol correctly
-- [ ] All tools implemented with `_val()` helper and proper `Field()` descriptions
+- [ ] All tools implemented with proper `Field()` descriptions (add `_val()` helper if using optional params)
 - [ ] Connection test script works
 - [ ] E2E tests pass
 
@@ -563,13 +568,13 @@ Include 6-8 examples covering main workflows. Use real responses from your test 
 - [ ] Git is clean
 
 ### After Phase 6 (Publish)
-- [ ] pyproject.toml has correct package name, keywords, classifiers, urls
-- [ ] publish.yml updated with correct PyPI package name
+- [ ] pyproject.toml has correct package name, keywords, classifiers, urls, hatch build config
+- [ ] publish.yml verified (trusted publisher with OIDC)
 - [ ] PyPI trusted publisher configured
 - [ ] GitHub environment "pypi" created
 - [ ] Package published to PyPI
 - [ ] GitHub repo metadata set (description, topics, homepage)
-- [ ] README shield badges uncommented and updated
+- [ ] README shield badges added
 - [ ] README has conversational usage examples
 - [ ] Both English and Chinese READMEs updated
 - [ ] CONTRIBUTING.md updated
